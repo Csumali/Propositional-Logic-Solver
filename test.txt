@@ -1,0 +1,1 @@
+(implies (and p q r) (or p q r))

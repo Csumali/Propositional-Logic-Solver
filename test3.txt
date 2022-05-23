@@ -1,0 +1,1 @@
+(implies (and p q r  (or s t)) (or (and  p q r s) (and p q r t)))
