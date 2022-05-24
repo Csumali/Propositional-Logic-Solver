@@ -1,0 +1,1 @@
+(or (and (not q) (not p)) (and q (not r)) r p)
