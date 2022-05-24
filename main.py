@@ -62,7 +62,7 @@ class PropositionalLogic:
             return dict[clauses]
         if (clauses[0] == "implies"):
             return (not self.solve(clauses[1][0], dict) or self.solve(clauses[1][1], dict))
-        elif (clauses[0] == "neg"):
+        elif (clauses[0] == "neg" or clauses[0] == "not"):
             return not self.solve(clauses[1][0], dict)
         elif (clauses[0] == "or"):
             if (len(clauses[1]) > 2):
@@ -104,8 +104,8 @@ class PropositionalLogic:
         if (input == ""):
             print("No input provided")
             return
+        print("Formula =", input)
         clauses = self.getClauses(input)
-        print(clauses)
         var = []
         self.getVariables(clauses, var)
         table = self.buildTable(len(var))
