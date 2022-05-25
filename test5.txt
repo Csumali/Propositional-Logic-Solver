@@ -1,1 +1,1 @@
-(neg (and p q  (neg r))
+(neg (and p q (neg r)))
