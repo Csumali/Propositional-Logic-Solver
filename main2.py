@@ -41,51 +41,213 @@ class PropositionalLogic:
             args.append(cur[0])
         return func, args
 
-    # Modifies an array of variables found in clauses
-    def getVariables(self, clauses, var):
-        for arg in clauses[1]:
-            if (isinstance(arg, tuple)):
-                self.getVariables(arg, var)
-            elif (not(arg in var)):
-                var.append(arg)
+    def CNF(self, clauses):
+        # Step 1
+        clauses = self.iff(clauses)
+        # Step 2
+        clauses = self.implies(clauses)
+        # Step 3
+        clauses = self.neg(clauses)
+        # Step 4
+        clauses = self.myOr(clauses)
+        # Cleaning
+        clauses = self.combineAndOr(clauses)
+        # Output
+        self.outputCNF(clauses)
+        return clauses
 
-    # Recursively solves a formula
-    # Returns a boolean
-    def solve(self, clauses, dict):
-        out = list(clauses)
-        out[1][0] = list(clauses[1][0])
-        out[1][1] = list(clauses[1][1])
-        if (len(clauses) == 1):
-            return dict[clauses]
+    def iff(self, clauses):
+        # change clauses to list from tuple so can modify
+        temp = list(clauses)
+        for i in range(len(clauses[1])):
+            if (isinstance(clauses[1][i], tuple)):
+                temp[1][i] = self.iff(temp[1][i])
+        if (clauses[0] == "iff"):
+            arg1 = clauses[1][0]
+            arg2 = clauses[1][1]
+            # change iff to and then add implies to each
+            temp[0] = "and"
+            # add implies for first arg
+            tempList = []
+            tempList.append(arg1)
+            tempList.append(arg2)
+            tempTuple = ("implies", tempList)
+            temp[1][0] = tempTuple
+            # add implies for second arg
+            tempList = []
+            tempList.append(arg2)
+            tempList.append(arg1)
+            tempTuple = ("implies", tempList)
+            temp[1][1] = tempTuple
+        clauses = tuple(temp)
+        return clauses
+
+    def implies(self, clauses):
+        # change clauses to list from tuple so can modify
+        temp = list(clauses)
+        for i in range(len(clauses[1])):
+            if (isinstance(clauses[1][i], tuple)):
+                temp[1][i] = self.implies(temp[1][i])
         if (clauses[0] == "implies"):
-            # should add parenthesis in printClause using clauses and var list instead
-            out[0] = "(or"
-            out[1][0].insert(0, "(not")
-            out[1][0][1] = "(" + clauses[1][0][1]
-            out[1][0][-1][-1] = clauses[1][0][-1][-1] + "))"
-            out[1][1][0] = "(" + clauses[1][1][0]
-            out[1][1][-1][-1] = clauses[1][1][-1][-1] + "))"
-        elif (clauses[0] == "neg" or clauses[0] == "not"):
-            return not self.solve(clauses[1][0], dict)
-        elif (clauses[0] == "or"):
-            if (len(clauses[1]) > 2):
-                return self.solve(clauses[1][0], dict) or self.solve(tuple([clauses[0], clauses[1][1:]]), dict)
-            return self.solve(clauses[1][0], dict) or self.solve(clauses[1][1], dict)
-        elif (clauses[0] == "and"):
-            if (len(clauses[1]) > 2):
-                return self.solve(clauses[1][0], dict) and self.solve(tuple([clauses[0], clauses[1][1:]]), dict)
-            return self.solve(clauses[1][0], dict) and self.solve(clauses[1][1], dict)
-        elif (clauses[0] == "iff"):
-            return self.solve(clauses[1][0], dict) == self.solve(clauses[1][1], dict)
-        return out
+            # change implies to or
+            temp[0] = "or"
+            # add not in first arg
+            tempList = []
+            tempList.append(clauses[1][0])
+            tempTuple = ("not", tempList)
+            temp[1][0] = tempTuple
+        clauses = tuple(temp)
+        return clauses
+
+    def neg(self, clauses):
+        # change clauses to list from tuple so can modify
+        temp = list(clauses)
+        if (clauses[0] == "neg" or clauses[0] == "not"):
+            if (isinstance(clauses[1][0], tuple)):
+                if (clauses[1][0][0] == "neg" or clauses[1][0][0] == "not"):
+                    temp = clauses[1][0][1][0]
+                    return temp
+                elif (clauses[1][0][0] == "and" or clauses[1][0][0] == "or"):
+                    # change not to and/or then add not to each
+                    if (clauses[1][0][0] == "and"):
+                        temp[0] = "or"
+                    else:
+                        temp[0] = "and"
+
+                    outerList = []
+                    for i in range(len(clauses[1][0][1])):
+                        # add not for first arg
+                        tempList = []
+                        tempList.append(clauses[1][0][1][i])
+                        tempTuple = ("not", tempList)
+                        outerList.append(tempTuple)
+                    temp[1] = outerList
+        clauses = tuple(temp)
+        for i in range(len(clauses[1])):
+            if (isinstance(clauses[1][i], tuple)):
+                temp[1][i] = self.neg(temp[1][i])
+        return clauses
+
+    # distribution law
+    def myOr(self, clauses):
+        if(type(clauses) == str):
+            return clauses
+        # change clauses to list from tuple so can modify
+        temp = list(clauses)
+        for i in range(len(clauses[1])):
+            if (isinstance(clauses[1][i], tuple)):
+                temp[1][i] = self.myOr(temp[1][i])
+        if (clauses[0] == "or"):
+            i = 0
+            size = len(temp[1])
+            outerList = []
+            while(i < size):
+                if (i == size - 1):
+                    outerList.append(clauses[1][i])
+                elif (isinstance(clauses[1][i], str) and isinstance(clauses[1][i + 1], tuple)):
+                    if (clauses[1][i + 1][0] == "and"):
+                        arg1 = clauses[1][i]
+
+                        outerList = []
+                        # add not for first arg
+                        for j in range(len(clauses[1][i + 1][1])):
+                            tempList = []
+                            tempList.append(arg1)
+                            tempList.append(clauses[1][i + 1][1][j])
+                            tempTuple = ("or", tempList)
+                            outerList.append(tempTuple)
+                        i += 1
+                    else:
+                        outerList.append(clauses[1][i])
+                
+                # if order is reversed
+                elif (isinstance(clauses[1][i + 1], str) and isinstance(clauses[1][i], tuple)):
+                    if (clauses[1][i][0] == "and"):
+                        arg1 = clauses[1][i + 1]
+                        # change or to and then add or arg1 to each
+                        temp[0] = "and"
+
+                        # add not for first arg
+                        for j in range(len(clauses[1][i][1])):
+                            tempList = []
+                            tempList.append(clauses[1][i][1][j])
+                            tempList.append(arg1)
+                            tempTuple = ("or", tempList)
+                            outerList.append(tempTuple)
+                        i += 1
+                    else:
+                        outerList.append(clauses[1][i])
+                else:
+                    outerList.append(clauses[1][i])
+                i += 1
+            temp[1] = outerList
+        clauses = tuple(temp)
+        return clauses
     
-    # Prints the table
-    def printClause(self, out):
-        for x in out:
-            if(type(x) != str):
-                self.printClause(x)
-            else:
-                print(x, end = " ")
+    def combineAndOr(self, clauses):
+        if(type(clauses) == str):
+            return clauses
+        # change clauses to list from tuple so can modify
+        temp = list(clauses)
+        for i in range(len(clauses[1])):
+            if (isinstance(clauses[1][i], tuple)):
+                temp[1][i] = self.combineAndOr(temp[1][i])
+        if (temp[0] == "or"):
+            newList = []
+            for i in range(len(temp[1])):
+                if (isinstance(temp[1][i], tuple)):
+                    if (temp[1][i][0] == "or"):
+                        for j in range(len(temp[1][i][1])):
+                            newList.append(temp[1][i][1][j])
+                    else:
+                        newList.append(temp[1][i])
+                else:
+                    newList.append(temp[1][i])
+            temp[1] = newList
+        if (temp[0] == "and"):
+            newList = []
+            for i in range(len(temp[1])):
+                if (isinstance(temp[1][i], tuple)):
+                    if (temp[1][i][0] == "and"):
+                        for j in range(len(temp[1][i][1])):
+                            newList.append(temp[1][i][1][j])
+                    else:
+                        newList.append(temp[1][i])
+                else:
+                    newList.append(temp[1][i])
+            temp[1] = newList
+        clauses = tuple(temp)
+        return clauses
+
+    def outputCNF(self, clauses):
+        f = open("output.txt", "w")
+        if (clauses[0] == "and"):
+            for i in range(len(clauses[1])):
+                f.write(self.outputHelper(clauses[1][i]))
+                if (i < len(clauses[1]) - 1):
+                    f.write(" V ")
+                    f.write("\n")
+        else :
+            f.write(self.outputHelper(clauses))     
+
+    def outputHelper(self, clauses):
+        if (type(clauses) == str):
+            return clauses
+        if (clauses[0] == "not"):
+            return "(not " + self.outputHelper(clauses[1][0]) + ")"
+        if (clauses[0] == "and"):
+            temp = "(and"
+            for x in clauses[1]:
+                temp += " " + self.outputHelper(x)
+            temp += ")"
+            return temp
+        if (clauses[0] == "or"):
+            temp = "(or"
+            for x in clauses[1]:
+                temp += " " + self.outputHelper(x)
+            temp += ")"
+            return temp
+
         
     # Main method
     def main(self):
@@ -96,24 +258,7 @@ class PropositionalLogic:
             return
         print("Formula =", input)
         clauses = self.getClauses(input)
-        dict = {}
-        out = []
-        out = self.solve(clauses, dict)
-        self.printClause(out)
-        # var = []
-        # self.getVariables(clauses, var)
-        # table = self.buildTable(len(var))
-        # ans = []
-        # for row in table:
-        #     dict = {}
-        #     for i in range(len(var)):
-        #         dict[var[i]] = row[i]
-        #     temp = self.solve(clauses, dict)
-        #     if (temp == 0):
-        #         temp = False
-        #     elif (temp == 1):
-        #         temp = True
-        #     ans.append(temp)
+        self.CNF(clauses)
         
     
 if __name__ == "__main__":
