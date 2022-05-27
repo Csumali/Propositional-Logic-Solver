@@ -1,6 +1,7 @@
 from inspect import getclasstree
 from pydoc import plain
 import sys
+import main2
 
 
 class PropositionalLogic:
@@ -40,6 +41,39 @@ class PropositionalLogic:
         if (len(cur) > 0 and cur[0] != ")"):
             args.append(cur[0])
         return func, args
+
+    def resolution(self, clauses, output):
+        output = self.resolutionHelper(clauses, output)
+        cur = output[:-1].split(" ")
+        bool = True
+        while bool:
+            if(len(cur) == 0):
+                return ""
+            i = cur[0]
+            cur = cur[1:]
+            if(i == "not"):
+                i = cur[0]
+                cur = cur[1:]
+            if i in cur:
+                for x in range(len(cur)):
+                    if(i == cur[x]):
+                        cur.pop(x)
+                        if(len(cur) > 0 and cur[x - 1] == "not"):
+                            cur.pop(x - 1)
+                        break
+            else:
+                return output
+        return output
+
+    def resolutionHelper(self, clauses, output):
+        for i in range(len(clauses[1])):
+            if (isinstance(clauses[1][i], tuple)):
+                output = self.resolutionHelper(clauses[1][i], output)
+            elif (clauses[0] == "not"):
+                output += "not " + clauses[1][i] + " "
+            else:
+                output += clauses[1][i] + " "
+        return output
 
     def CNF(self, clauses):
         # Step 1
@@ -161,7 +195,7 @@ class PropositionalLogic:
                         i += 1
                     else:
                         outerList.append(clauses[1][i])
-                
+
                 # if order is reversed
                 elif (isinstance(clauses[1][i + 1], str) and isinstance(clauses[1][i], tuple)):
                     if (clauses[1][i][0] == "and"):
@@ -211,11 +245,12 @@ class PropositionalLogic:
                                             elif (len(clauses[1][k2]) == 1):
                                                 tempList.append(clauses[1][k2])
                                             else:
-                                                tempList.append(clauses[1][k2][1][k3])
-                                    
+                                                tempList.append(
+                                                    clauses[1][k2][1][k3])
+
                                         tempTuple = ("or", tempList)
                                         outerList.append(tempTuple)
-                            
+
                         i += 1
                     else:
                         outerList.append(clauses[1][i])
@@ -225,7 +260,7 @@ class PropositionalLogic:
             temp[1] = outerList
         clauses = tuple(temp)
         return clauses
-    
+
     def combineAndOr(self, clauses):
         if(type(clauses) == str):
             return clauses
@@ -269,8 +304,8 @@ class PropositionalLogic:
                 if (i < len(clauses[1]) - 1):
                     f.write(" ^ ")
                     f.write("\n")
-        else :
-            f.write(self.outputHelper(clauses))     
+        else:
+            f.write(self.outputHelper(clauses))
 
     def outputHelper(self, clauses):
         if (type(clauses) == str):
@@ -290,7 +325,12 @@ class PropositionalLogic:
             temp += ")"
             return temp
 
-        
+    def isEmpty(self, clauses):
+        if(len(clauses) > 0):
+            print("Not Empty Clause")
+        else:
+            print("Empty Clause")
+
     # Main method
     def main(self):
         file = open(sys.argv[1])
@@ -299,10 +339,14 @@ class PropositionalLogic:
             print("No input provided")
             return
         print("Formula =", input)
+        input = "(not " + input + ")"
         clauses = self.getClauses(input)
-        self.CNF(clauses)
-        
-    
+        clauses = self.CNF(clauses)
+        output = ""
+        output = self.resolution(clauses, output)
+        self.isEmpty(output)
+
+
 if __name__ == "__main__":
     pl = PropositionalLogic()
     pl.main()

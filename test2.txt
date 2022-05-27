@@ -1,1 +1,1 @@
-(iff (and p q r)  (and p r q))
+(iff (and p q r) (and a b c))

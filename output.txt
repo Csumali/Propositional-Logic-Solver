@@ -1,0 +1,4 @@
+(or q p) ^ 
+(or (not q) r) ^ 
+(not r) ^ 
+p
