@@ -143,8 +143,7 @@ class PropositionalLogic:
             outerList = []
             while(i < size):
                 if (i == size - 1):
-                    if(size < 3):
-                        outerList.append(clauses[1][i])
+                    outerList.append(clauses[1][i])
                 elif (isinstance(clauses[1][i], str) and isinstance(clauses[1][i + 1], tuple)):
                     if (clauses[1][i + 1][0] == "and"):
                         arg1 = clauses[1][i]
@@ -216,6 +215,53 @@ class PropositionalLogic:
                                         tempTuple = ("or", tempList)
                                         outerList.append(tempTuple)
                             
+                        i += 1
+                    else:
+                        outerList.append(clauses[1][i])
+                else:
+                    outerList.append(clauses[1][i])
+                i += 1
+            temp[1] = outerList
+
+        # if and is first clause
+        elif (clauses[0] == "and"):
+            i = 0
+            size = len(temp[1])
+            outerList = []
+            while(i < size):
+                if (i == size - 1):
+                    outerList.append(clauses[1][i])
+                elif (isinstance(clauses[1][i], str) and isinstance(clauses[1][i + 1], tuple)):
+                    if (clauses[1][i + 1][0] == "or"):
+                        arg1 = clauses[1][i]
+                        temp[0] = "or"
+
+                        outerList = []
+                        # add not for first arg
+                        for j in range(len(clauses[1][i + 1][1])):
+                            tempList = []
+                            tempList.append(arg1)
+                            tempList.append(clauses[1][i + 1][1][j])
+                            tempTuple = ("and", tempList)
+                            outerList.append(tempTuple)
+                        i += 1
+                    else:
+                        outerList.append(clauses[1][i])
+                
+                # if order is reversed
+                elif (isinstance(clauses[1][i + 1], str) and isinstance(clauses[1][i], tuple)):
+                    if (clauses[1][i][0] == "or"):
+                        arg1 = clauses[1][i + 1]
+                        # change and to or then add and arg1 to each
+                        temp[0] = "or"
+
+                        # add not for first arg
+                        for j in range(len(clauses[1][i][1])):
+                            tempList = []
+                            tempList.append(clauses[1][i][1][j])
+                            tempList.append(arg1)
+                            tempTuple = ("or", tempList)
+                            outerList.append(tempTuple)
                         i += 1
                     else:
                         outerList.append(clauses[1][i])
